@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  dev:
+    container_name: server-dev
+    env_file:
+      - .development.env
+    build:
+      context: .
+    command: npm run start:debug
+    ports:
+      - "3000:3000"
+      - "9229:9229"
+    networks:
+      - server-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:5.0.0
+    container_name: server-mongodb
+    env_file:
+      - .development.env
+    networks:
+      - server-network
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+
+networks:
+  server-network:
