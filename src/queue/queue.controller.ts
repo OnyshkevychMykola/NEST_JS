@@ -2,13 +2,13 @@ import {
   Body,
   Controller,
   Delete,
-  Get, HttpStatus,
-  Param, ParseIntPipe,
+  Get,
+  Param,
   Post,
   Put,
   Query,
-  Req,
-  UseGuards, UsePipes, ValidationPipe,
+  Req, UploadedFile,
+  UseGuards, UseInterceptors, UsePipes, ValidationPipe,
 } from '@nestjs/common';
 import {QueueService} from './queue.service';
 import { CreateQueueDto } from './dto/create-queue.dto';
@@ -19,6 +19,11 @@ import { AuthGuard } from '@nestjs/passport';
 import {QueueTransformPipe} from "./pipes/queueTransformPipe";
 import {Roles} from "../customers/roles.decorator";
 import {AuthRoleGuard} from "../auth/guards/auth-role-guard";
+import {FileInterceptor} from "@nestjs/platform-express";
+import {createReadStream, createWriteStream} from "fs";
+import * as csv from 'csv-parser';
+import * as fs from "fs";
+import * as os from "os";
 
 @Controller('queue')
 @UseGuards(AuthGuard())
@@ -69,4 +74,74 @@ export class QueueController {
   ): Promise<Queue> {
     return this.queueService.deleteById(id);
   }
+
+  @Get('/e/export-to-csv')
+  @UseInterceptors(FileInterceptor('csvfile'))
+  async uploadCsvFile(@UploadedFile() file, @Req() req) {
+    const results = [];
+
+    const tempFilePath = `${os.tmpdir()}/${Date.now()}.csv`;
+    fs.writeFileSync(tempFilePath, file.buffer);
+
+    createReadStream(tempFilePath)
+        .pipe(csv())
+        .on('data', (row) => {
+          const donorData = {
+            Ein: row.Ein,
+            AddedAt: new Date(row.AddedAt),
+            Address: row.Address,
+            Balance: parseFloat(row.Balance),
+            City: row.City,
+            EarliestHoldDate: new Date(row.EarliestHoldDate),
+            LastDonationMade: new Date(row.LastDonationMade),
+            State: row.State,
+            Reason: row.Reason,
+          };
+
+          results.push(donorData);
+        })
+        .on('end', async () => {
+          await this.queueService.createDonor(results, req.user);
+          fs.unlinkSync(tempFilePath);
+        });
+
+    return { message: 'CSV file uploaded and processed.' };
+  }
+
+
+  @Post('/e/export-to-csv')
+  async exportDataToCsv(): Promise<void> {
+    const data = await this.queueService.getAllQueueData();
+    const csvData = [];
+
+    for (const item of data) {
+      const csvItem = {
+        Ein: item.ein,
+        AddedAt: new Date(item.addedAt).toISOString(),
+        Address: item.address,
+        Balance: item.balance.toString(),
+        City: item.city,
+        EarliestHoldDate: new Date(item.earliestHoldDate).toISOString(),
+        LastDonationMade: new Date(item.lastDonationMade).toISOString(),
+        State: item.state,
+        Reason: item.reason,
+      };
+
+      csvData.push(csvItem);
+    }
+
+    const fileName = 'exported_data.csv';
+
+    const writeStream = createWriteStream(fileName);
+    writeStream.write('Ein,AddedAt,Address,Balance,City,EarliestHoldDate,LastDonationMade,State,Reason\n');
+
+    for (const csvItem of csvData) {
+      writeStream.write(
+          `${csvItem.Ein},${csvItem.AddedAt},${csvItem.Address},${csvItem.Balance},${csvItem.City},${csvItem.EarliestHoldDate},${csvItem.LastDonationMade},${csvItem.State},${csvItem.Reason}\n`
+      );
+    }
+
+    writeStream.end();
+  }
+
 }

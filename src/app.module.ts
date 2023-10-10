@@ -6,8 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import {ScheduleModule} from "@nestjs/schedule";
 import { TasksModule } from './tasks/tasks.module';
-import { UploadModule } from './upload/upload.module';
-// import { GatewayModule } from './gateway/gateway.module';
+import { GatewayModule } from './gateway/gateway.module';
 import { CustomersModule } from './customers/customers.module';
 import {QueueModule} from "./queue/queue.module";
 
@@ -21,7 +20,6 @@ import {QueueModule} from "./queue/queue.module";
     ScheduleModule.forRoot(),
     AuthModule,
     // TasksModule,
-    UploadModule,
     // GatewayModule,
     CustomersModule,
     QueueModule

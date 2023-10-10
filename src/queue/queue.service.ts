@@ -7,6 +7,9 @@ import {Query} from 'express-serve-static-core';
 import {User} from '../auth/schemas/user.schema';
 import {CreateQueueDto} from "./dto/create-queue.dto";
 import {UpdateQueueDto} from "./dto/update-queue.dto";
+import { createObjectCsvWriter } from 'csv-writer';
+import {validate} from "class-validator";
+import {createWriteStream} from "fs";
 
 @Injectable()
 export class QueueService {
@@ -35,8 +38,9 @@ export class QueueService {
 
     return this.queueModel
         .find({...filters})
-        .limit(resPerPage)
-        .skip(skip);
+        // .limit(resPerPage)
+        // .skip(skip)
+        ;
   }
 
   async create(createQueueDto: CreateQueueDto, user: User): Promise<Queue> {
@@ -78,4 +82,43 @@ export class QueueService {
   async deleteById(id: string): Promise<Queue> {
     return this.queueModel.findByIdAndDelete(id);
   }
+
+  async getAllQueueData() {
+    return  await this.queueModel.find().exec();
+  }
+
+  async createDonor(results: any [], user) {
+    try {
+      for (const result of results) {
+        const createQueueDto: CreateQueueDto = {
+          ein: Number(result.Ein),
+          addedAt: result.AddedAt,
+          address: result.Address,
+          balance: result.Balance,
+          city: result.City,
+          earliestHoldDate: result.EarliestHoldDate,
+          lastDonationMade: result.LastDonationMade,
+          state: result.State,
+          reason: result.Reason,
+          user: user._id,
+        };
+
+        const errors = await validate(createQueueDto);
+        if (errors.length > 0) {
+          new BadRequestException('Validation failed');
+        }
+
+        const existingQueue = await this.queueModel.findOne({ ein: createQueueDto.ein }).exec();
+        if (!existingQueue) {
+          const queue = new this.queueModel(createQueueDto);
+          await queue.save();
+        } else {
+          console.log(`${createQueueDto.ein} is already in queue`)
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }
