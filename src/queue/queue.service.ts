@@ -38,8 +38,8 @@ export class QueueService {
 
     return this.queueModel
         .find({...filters})
-        // .limit(resPerPage)
-        // .skip(skip)
+        .limit(resPerPage)
+        .skip(skip)
         ;
   }
 
