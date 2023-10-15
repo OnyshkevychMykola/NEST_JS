@@ -83,8 +83,27 @@ export class QueueService {
     return this.queueModel.findByIdAndDelete(id);
   }
 
-  async getAllQueueData() {
-    return  await this.queueModel.find().exec();
+  async getAllQueueData(): Promise<Queue[]> {
+    return await this.queueModel.find().exec();
+  }
+
+  async getTotalBalance(): Promise<number> {
+    const aggregation = [
+      {
+        $group: {
+          _id: null,
+          totalBalance: { $sum: '$balance' },
+        },
+      },
+    ];
+
+    const result = await this.queueModel.aggregate(aggregation).exec();
+
+    if (result.length > 0) {
+      return result[0].totalBalance;
+    } else {
+      return 0; // Або будь-яке інше значення за замовчуванням
+    }
   }
 
   async createDonor(results: any [], user) {

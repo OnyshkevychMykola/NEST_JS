@@ -24,10 +24,12 @@ import {createReadStream, createWriteStream} from "fs";
 import * as csv from 'csv-parser';
 import * as fs from "fs";
 import * as os from "os";
+import {ApiOperation, ApiResponse, ApiTags} from "@nestjs/swagger";
 
 @Controller('queue')
 @UseGuards(AuthGuard())
 @UsePipes(new ValidationPipe())
+@ApiTags('queue')
 export class QueueController {
   constructor(
       private queueService: QueueService
@@ -36,20 +38,26 @@ export class QueueController {
   @Get()
   @UseGuards(AuthRoleGuard)
   @Roles('admin', 'developer')
+  @ApiOperation({ summary: 'Get Queue' })
+  @ApiResponse({ status: 200, description: 'Returns Queue' })
   async getQueue(@Query(QueueTransformPipe) queueFilters: ExpressQuery): Promise<Queue[]> {
     return this.queueService.findAll(queueFilters);
   }
 
   @Post()
+  @ApiOperation({ summary: 'Add Item to queue' })
+  @ApiResponse({ status: 200, description: 'Returns created Item' })
   async addItemToQueue(
     @Body()
-    book: CreateQueueDto,
+    createQueueDto: CreateQueueDto,
     @Req() req,
   ): Promise<Queue> {
-    return this.queueService.create(book, req.user);
+    return this.queueService.create(createQueueDto, req.user);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get Queue By Id' })
+  @ApiResponse({ status: 200, description: 'Returns queue item by id' })
   async getQueueItemById(
     @Param('id')
     id: string,
@@ -58,6 +66,8 @@ export class QueueController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update queue item by id' })
+  @ApiResponse({ status: 200, description: 'Updates queue item by id and new data' })
   async updateQueueItem(
     @Param('id')
     id: string,
@@ -68,6 +78,8 @@ export class QueueController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete queue item by id' })
+  @ApiResponse({ status: 200, description: 'Deletes queue item by id' })
   async deleteQueueItem(
     @Param('id')
     id: string,
@@ -77,6 +89,8 @@ export class QueueController {
 
   @Get('/e/export-to-csv')
   @UseInterceptors(FileInterceptor('csvfile'))
+  @ApiOperation({ summary: 'Upload CSV file' })
+  @ApiResponse({ status: 200, description: 'Uploads CSV file' })
   async uploadCsvFile(@UploadedFile() file, @Req() req) {
     const results = [];
 
@@ -110,6 +124,8 @@ export class QueueController {
 
 
   @Post('/e/export-to-csv')
+  @ApiOperation({ summary: 'Export Data To CSV file' })
+  @ApiResponse({ status: 200, description: 'ExportS Data To CSV file' })
   async exportDataToCsv(): Promise<void> {
     const data = await this.queueService.getAllQueueData();
     const csvData = [];

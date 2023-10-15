@@ -22,11 +22,6 @@ import {AuthGuard} from "@nestjs/passport";
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  // @Post('/refresh')
-  // check(@Body() body: string) {
-  //  return this.authService.check(body);
-  // }
-
   @Post('/signup')
   signUp(@Body() signUpDto: SignUpDto): Promise<{ token: string }> {
     return this.authService.signUp(signUpDto);
