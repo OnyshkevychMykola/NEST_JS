@@ -9,6 +9,7 @@ import {TasksModule} from './tasks/tasks.module';
 import {CustomersModule} from './customers/customers.module';
 import {QueueModule} from "./queue/queue.module";
 import {ClientsModule, Transport} from "@nestjs/microservices";
+import {GatewayModule} from "./gateway/gateway.module";
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import {ClientsModule, Transport} from "@nestjs/microservices";
         transport: Transport.TCP
       }
     ]),
-    // GatewayModule,
+    GatewayModule,
     CustomersModule,
     QueueModule
   ],
